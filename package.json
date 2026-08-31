@@ -1,0 +1,13 @@
+{
+  "name": "mission-control",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A calm personal assignment and task dashboard PWA.",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node serve.cjs",
+    "start": "node serve.cjs",
+    "build": "node scripts/build-static.cjs",
+    "test": "npm run build && node tests/static-check.cjs"
+  }
+}

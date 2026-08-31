@@ -1,0 +1,1139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>MISSION CONTROL</title>
+    <meta name="description" content="A calm personal assignment and task dashboard." />
+    <meta name="theme-color" content="#f7f7f5" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Mission Control" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+    <style>
+      :root {
+        --bg: #f7f7f5;
+        --ink: #24252a;
+        --muted: #73737c;
+        --line: #e4e1da;
+        --card: #ffffff;
+        --soft: #efeeeb;
+        --violet: #6864d8;
+        --violet-soft: #ecebff;
+        --must: #d95f4b;
+        --should: #5f76d7;
+        --side: #68a16a;
+        --shadow: 0 18px 45px rgba(38, 37, 44, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: var(--bg);
+      }
+
+      body {
+        margin: 0;
+        overflow-x: hidden;
+        color: var(--ink);
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(247, 247, 245, 0.94)),
+          var(--bg);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: minmax(220px, 280px) minmax(0, 760px);
+        gap: 28px;
+        justify-content: center;
+        min-height: 100vh;
+        min-height: 100svh;
+        padding: calc(28px + env(safe-area-inset-top)) 28px calc(28px + env(safe-area-inset-bottom));
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 28px;
+        align-self: start;
+        display: grid;
+        gap: 26px;
+        padding: 24px;
+      }
+
+      .profile {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        margin-bottom: 16px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--violet-soft);
+        color: #5651bd;
+        font-size: 13px;
+        font-weight: 850;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 28px;
+        line-height: 1;
+        letter-spacing: 0;
+      }
+
+      .status {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .tabs,
+      .filters,
+      .choices {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .tabs {
+        flex-direction: column;
+      }
+
+      .tabs button,
+      .filters button,
+      .choices button {
+        min-height: 40px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--soft);
+        color: #55555f;
+        padding: 0 18px;
+        font-weight: 760;
+        transition:
+          transform 160ms ease,
+          background 160ms ease,
+          color 160ms ease;
+      }
+
+      .tabs button {
+        width: 100%;
+        text-align: left;
+      }
+
+      .tabs button.active,
+      .filters button.active,
+      .choices button.active {
+        background: var(--violet);
+        color: #fff;
+      }
+
+      .tabs button:hover,
+      .filters button:hover,
+      .choices button:hover,
+      .add-main:hover,
+      .add-float:hover {
+        transform: translateY(-1px);
+      }
+
+      .stats {
+        display: grid;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .board {
+        width: min(100%, 760px);
+        padding: 24px 0 108px;
+      }
+
+      .board-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .eyebrow {
+        margin-bottom: 5px;
+        color: var(--violet);
+        font-size: 13px;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+
+      h2 {
+        font-size: 31px;
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      .add-main,
+      .submit {
+        min-height: 44px;
+        border: 0;
+        border-radius: 999px;
+        background: #222326;
+        color: #fff;
+        padding: 0 18px;
+        font-weight: 850;
+        box-shadow: 0 12px 28px rgba(34, 35, 38, 0.14);
+      }
+
+      .add-main span {
+        display: inline-block;
+        margin-right: 7px;
+        font-size: 20px;
+        line-height: 0;
+      }
+
+      .filters {
+        margin-bottom: 26px;
+      }
+
+      .list,
+      .group {
+        display: grid;
+        gap: 14px;
+      }
+
+      .group {
+        margin-bottom: 28px;
+      }
+
+      .group > h3 {
+        color: #56565f;
+        font-size: 13px;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      .card {
+        display: grid;
+        grid-template-columns: 34px minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        min-height: 86px;
+        border: 1px solid var(--line);
+        border-left-width: 5px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 16px;
+        box-shadow: 0 8px 20px rgba(35, 34, 40, 0.04);
+      }
+
+      .card.must {
+        border-left-color: var(--must);
+      }
+
+      .card.should {
+        border-left-color: var(--should);
+      }
+
+      .card.side {
+        border-left-color: var(--side);
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .card.complete {
+        opacity: 0.78;
+      }
+
+      .check {
+        display: grid;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border: 2px solid #d6d3ca;
+        border-radius: 50%;
+        background: #fff;
+        color: #fff;
+        font-weight: 900;
+        transition:
+          background 180ms ease,
+          border-color 180ms ease,
+          transform 180ms ease;
+      }
+
+      .complete .check {
+        border-color: #a8d8a5;
+        background: #74bd72;
+        animation: complete-pop 240ms ease;
+      }
+
+      .main {
+        min-width: 0;
+      }
+
+      .title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .mark {
+        flex: 0 0 auto;
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border-radius: 7px;
+        background: var(--soft);
+        color: #4e4d53;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .must .mark {
+        background: #f5dfdb;
+        color: #a94131;
+      }
+
+      .should .mark {
+        background: #e4e8ff;
+        color: #455bbb;
+      }
+
+      .side .mark {
+        background: #e4f0e3;
+        color: #4e7c50;
+      }
+
+      .card h4 {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        color: #2a2b31;
+        font-size: 17px;
+        font-weight: 760;
+        line-height: 1.25;
+      }
+
+      .card p {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 7px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .card p span + span::before {
+        content: "-";
+        margin-right: 8px;
+        color: #b3afa6;
+      }
+
+      .actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      .actions button,
+      .panel-head button {
+        min-height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: #606069;
+        padding: 0 11px;
+        font-size: 13px;
+        font-weight: 720;
+      }
+
+      .empty {
+        display: grid;
+        justify-items: center;
+        gap: 9px;
+        border: 1px dashed #d9d5cc;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.62);
+        padding: 46px 22px;
+        text-align: center;
+      }
+
+      .empty-badge {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--violet-soft);
+        color: var(--violet);
+        font-size: 22px;
+        font-weight: 900;
+      }
+
+      .empty h3 {
+        font-size: 20px;
+      }
+
+      .empty p {
+        max-width: 390px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .add-float {
+        position: fixed;
+        right: 26px;
+        bottom: calc(26px + env(safe-area-inset-bottom));
+        display: none;
+        width: 58px;
+        height: 58px;
+        border: 0;
+        border-radius: 50%;
+        background: var(--violet);
+        color: #fff;
+        font-size: 32px;
+        line-height: 1;
+        box-shadow: var(--shadow);
+      }
+
+      .backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: grid;
+        place-items: end center;
+        background: rgba(34, 35, 38, 0.24);
+        padding: calc(22px + env(safe-area-inset-top)) 22px calc(22px + env(safe-area-inset-bottom));
+      }
+
+      .panel {
+        width: min(100%, 520px);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 22px;
+        box-shadow: var(--shadow);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .panel-head h3 {
+        font-size: 23px;
+      }
+
+      .panel-head button {
+        width: 38px;
+        padding: 0;
+        font-size: 22px;
+      }
+
+      .field {
+        display: grid;
+        gap: 9px;
+        margin-bottom: 18px;
+      }
+
+      .field > span {
+        color: #5c5c64;
+        font-size: 13px;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+
+      .field input {
+        width: 100%;
+        min-height: 46px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #faf9f7;
+        color: var(--ink);
+        padding: 0 14px;
+        outline: none;
+      }
+
+      .field input:focus {
+        border-color: var(--violet);
+        box-shadow: 0 0 0 4px var(--violet-soft);
+      }
+
+      .choices {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .deadline-choices {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .choices button {
+        width: 100%;
+        min-width: 0;
+        padding: 0 10px;
+        white-space: normal;
+      }
+
+      .date-input {
+        margin-top: 10px;
+      }
+
+      .submit {
+        width: 100%;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @keyframes complete-pop {
+        0% {
+          transform: scale(0.82);
+        }
+        70% {
+          transform: scale(1.08);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @media (max-width: 860px) {
+        .shell {
+          display: block;
+          padding: calc(20px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+        }
+
+        .sidebar {
+          position: static;
+          padding: 8px 0 20px;
+        }
+
+        .tabs {
+          flex-direction: row;
+        }
+
+        .tabs button {
+          flex: 1 1 0;
+          text-align: center;
+        }
+
+        .stats {
+          display: none;
+        }
+
+        .board {
+          width: 100%;
+          padding-top: 2px;
+        }
+      }
+
+      @media (max-width: 620px) {
+        h1 {
+          font-size: 25px;
+        }
+
+        h2 {
+          font-size: 25px;
+        }
+
+        .board-top {
+          align-items: flex-start;
+        }
+
+        .add-main {
+          display: none;
+        }
+
+        .add-float {
+          display: grid;
+          place-items: center;
+        }
+
+        .filters {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .filters button {
+          width: 100%;
+          padding: 0 10px;
+        }
+
+        .card {
+          grid-template-columns: 34px minmax(0, 1fr);
+        }
+
+        .actions {
+          grid-column: 2;
+          justify-content: flex-start;
+        }
+
+        .backdrop {
+          align-items: end;
+          padding: calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));
+        }
+
+        .panel {
+          max-height: calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+          overflow: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .choices,
+        .deadline-choices {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar" aria-label="Mission navigation">
+        <div>
+          <div class="profile">SX</div>
+          <h1>MISSION CONTROL</h1>
+          <p class="status" id="statusText">Loading missions</p>
+        </div>
+
+        <nav class="tabs" aria-label="Task views">
+          <button class="active" data-view="todo" type="button">TO DO</button>
+          <button data-view="done" type="button">DONE</button>
+          <button data-view="all" type="button">ALL</button>
+        </nav>
+
+        <div class="stats">
+          <span id="openCount">0 open</span>
+          <span id="weekCount">0 done this week</span>
+        </div>
+      </aside>
+
+      <section class="board">
+        <header class="board-top">
+          <div>
+            <p class="eyebrow">Personal assignment dashboard</p>
+            <h2 id="boardTitle">Current missions</h2>
+          </div>
+          <button class="add-main" id="addMain" type="button"><span aria-hidden="true">+</span>Add Task</button>
+        </header>
+
+        <div class="filters" aria-label="Level filter">
+          <button class="active" data-level="all" type="button">All</button>
+          <button data-level="must" type="button">MUST</button>
+          <button data-level="should" type="button">SHOULD</button>
+          <button data-level="side" type="button">SIDE QUEST</button>
+        </div>
+
+        <div class="list" id="taskList"></div>
+      </section>
+
+      <button class="add-float" id="addFloat" type="button" aria-label="Add task">+</button>
+
+      <div class="backdrop" id="modal" role="presentation" hidden>
+        <form class="panel" id="taskForm">
+          <div class="panel-head">
+            <h3 id="panelTitle">Add Task</h3>
+            <button id="closePanel" aria-label="Close panel" type="button">x</button>
+          </div>
+
+          <label class="field">
+            <span>Task name</span>
+            <input id="titleInput" maxlength="120" placeholder="Physics quiz" required />
+          </label>
+
+          <div class="field">
+            <span>Level</span>
+            <div class="choices" id="levelChoices">
+              <button class="active" data-draft-level="must" type="button">MUST</button>
+              <button data-draft-level="should" type="button">SHOULD</button>
+              <button data-draft-level="side" type="button">SIDE QUEST</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <span>Deadline</span>
+            <div class="choices deadline-choices" id="deadlineChoices">
+              <button data-deadline-mode="today" type="button">Today</button>
+              <button class="active" data-deadline-mode="tomorrow" type="button">Tomorrow</button>
+              <button data-deadline-mode="pick" type="button">Pick Date</button>
+              <button data-deadline-mode="none" type="button">No Deadline</button>
+            </div>
+            <input class="date-input" id="dateInput" type="date" hidden />
+          </div>
+
+          <button class="submit" id="submitButton" type="submit">Add Task</button>
+        </form>
+      </div>
+    </main>
+
+    <script>
+      const STORAGE_KEY = "mission-control.tasks.v1";
+      const INIT_KEY = "mission-control.initialized.v1";
+      const levelMeta = {
+        must: { label: "MUST", mark: "M" },
+        should: { label: "SHOULD", mark: "S" },
+        side: { label: "SIDE QUEST", mark: "Q" },
+      };
+
+      const state = {
+        tasks: [],
+        view: "todo",
+        levelFilter: "all",
+        editingId: null,
+        draft: {
+          title: "",
+          level: "must",
+          deadlineMode: "tomorrow",
+          pickedDate: "",
+        },
+      };
+
+      const els = {
+        status: document.querySelector("#statusText"),
+        openCount: document.querySelector("#openCount"),
+        weekCount: document.querySelector("#weekCount"),
+        boardTitle: document.querySelector("#boardTitle"),
+        list: document.querySelector("#taskList"),
+        modal: document.querySelector("#modal"),
+        form: document.querySelector("#taskForm"),
+        panelTitle: document.querySelector("#panelTitle"),
+        submitButton: document.querySelector("#submitButton"),
+        titleInput: document.querySelector("#titleInput"),
+        dateInput: document.querySelector("#dateInput"),
+      };
+
+      function isoToday(offset = 0) {
+        const date = new Date();
+        date.setHours(12, 0, 0, 0);
+        date.setDate(date.getDate() + offset);
+        return date.toISOString().slice(0, 10);
+      }
+
+      function createDemoTasks() {
+        const now = new Date().toISOString();
+        return [
+          ["Economics HW", "must", "2026-08-31"],
+          ["Enrichment component choosing", "should", "2026-08-31"],
+          ["CS notes cleanup", "side", null],
+          ["Drama vocab review", "side", null],
+          ["Never Enough song practice", "side", null],
+          ["Drama monologue - research / memorize", "side", null],
+        ].map(([title, level, deadline], index) => ({
+          id: `demo-${index + 1}`,
+          title,
+          level,
+          deadline,
+          completed: false,
+          createdAt: now,
+          completedAt: null,
+        }));
+      }
+
+      function isTask(task) {
+        return (
+          task &&
+          typeof task.id === "string" &&
+          typeof task.title === "string" &&
+          ["must", "should", "side"].includes(task.level) &&
+          (typeof task.deadline === "string" || task.deadline === null) &&
+          typeof task.completed === "boolean" &&
+          typeof task.createdAt === "string" &&
+          (typeof task.completedAt === "string" || task.completedAt === null)
+        );
+      }
+
+      function loadTasks() {
+        try {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) return parsed.filter(isTask);
+          }
+        } catch {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+
+        if (localStorage.getItem(INIT_KEY)) return [];
+        const demo = createDemoTasks();
+        localStorage.setItem(INIT_KEY, "true");
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(demo));
+        return demo;
+      }
+
+      function saveTasks() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.tasks));
+        localStorage.setItem(INIT_KEY, "true");
+      }
+
+      function deadlineValue(task) {
+        return task.deadline ? new Date(`${task.deadline}T12:00:00`).getTime() : Number.MAX_SAFE_INTEGER;
+      }
+
+      function compareTodo(a, b) {
+        const deadlineDiff = deadlineValue(a) - deadlineValue(b);
+        if (deadlineDiff !== 0) return deadlineDiff;
+        const weight = { must: 0, should: 1, side: 2 };
+        return weight[a.level] - weight[b.level] || a.createdAt.localeCompare(b.createdAt);
+      }
+
+      function compareDone(a, b) {
+        return (b.completedAt || "").localeCompare(a.completedAt || "");
+      }
+
+      function formatDateLabel(iso) {
+        if (!iso) return "No deadline";
+        const today = isoToday();
+        const tomorrow = isoToday(1);
+        if (iso === today) return "Today";
+        if (iso === tomorrow) return "Tomorrow";
+        return new Intl.DateTimeFormat("en", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+        }).format(new Date(`${iso}T12:00:00`));
+      }
+
+      function formatShortDate(iso) {
+        return new Intl.DateTimeFormat("en", { day: "numeric", month: "short" }).format(
+          new Date(`${iso}T12:00:00`),
+        );
+      }
+
+      function sectionLabel(task) {
+        if (state.view === "done") {
+          return task.completedAt ? formatDateLabel(task.completedAt.slice(0, 10)).toUpperCase() : "COMPLETED";
+        }
+        if (!task.deadline) return "NO DEADLINE";
+        const today = isoToday();
+        const tomorrow = isoToday(1);
+        if (task.deadline < today) return "OVERDUE";
+        if (task.deadline === today) return `TODAY - ${formatShortDate(task.deadline)}`;
+        if (task.deadline === tomorrow) return `TOMORROW - ${formatShortDate(task.deadline)}`;
+        return formatDateLabel(task.deadline).toUpperCase();
+      }
+
+      function getFilteredTasks() {
+        return state.tasks
+          .filter((task) => {
+            if (state.view === "todo" && task.completed) return false;
+            if (state.view === "done" && !task.completed) return false;
+            if (state.levelFilter !== "all" && task.level !== state.levelFilter) return false;
+            return true;
+          })
+          .sort((a, b) => (state.view === "done" ? compareDone(a, b) : compareTodo(a, b)));
+      }
+
+      function groupTasks(tasks) {
+        const groups = new Map();
+        tasks.forEach((task) => {
+          const label = sectionLabel(task);
+          groups.set(label, [...(groups.get(label) || []), task]);
+        });
+        return Array.from(groups.entries());
+      }
+
+      function updateStatus() {
+        const open = state.tasks.filter((task) => !task.completed);
+        const mustOpen = open.filter((task) => task.level === "must").length;
+        const dueToday = open.filter((task) => task.deadline === isoToday()).length;
+        const dueTomorrow = open.filter((task) => task.deadline === isoToday(1)).length;
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const doneWeek = state.tasks.filter((task) => task.completedAt && new Date(task.completedAt) >= weekAgo).length;
+
+        els.status.textContent =
+          mustOpen === 0
+            ? "Must-do cleared"
+            : [`${mustOpen} must-do`, dueToday ? `${dueToday} due today` : "", dueTomorrow ? `${dueTomorrow} due tomorrow` : ""]
+                .filter(Boolean)
+                .join(" - ");
+        els.openCount.textContent = `${open.length} open`;
+        els.weekCount.textContent = `${doneWeek} done this week`;
+      }
+
+      function makeButton(text, className, onClick) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = text;
+        if (className) button.className = className;
+        button.addEventListener("click", onClick);
+        return button;
+      }
+
+      function renderTask(task) {
+        const card = document.createElement("article");
+        card.className = `card ${task.level}${task.completed ? " complete" : ""}`;
+
+        const check = makeButton(task.completed ? "✓" : "", "check", () => toggleTask(task.id));
+        check.setAttribute("aria-label", task.completed ? "Restore task" : "Complete task");
+        card.append(check);
+
+        const main = document.createElement("div");
+        main.className = "main";
+
+        const titleRow = document.createElement("div");
+        titleRow.className = "title-row";
+        const mark = document.createElement("span");
+        mark.className = "mark";
+        mark.textContent = levelMeta[task.level].mark;
+        const title = document.createElement("h4");
+        title.textContent = task.title;
+        titleRow.append(mark, title);
+
+        const meta = document.createElement("p");
+        [levelMeta[task.level].label, formatDateLabel(task.deadline), task.completedAt ? `Done ${formatDateLabel(task.completedAt.slice(0, 10))}` : ""]
+          .filter(Boolean)
+          .forEach((item) => {
+            const span = document.createElement("span");
+            span.textContent = item;
+            meta.append(span);
+          });
+
+        main.append(titleRow, meta);
+        card.append(main);
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        actions.append(
+          makeButton("Edit", "", () => openPanel(task.id)),
+          makeButton("Delete", "", () => deleteTask(task.id)),
+        );
+        card.append(actions);
+        return card;
+      }
+
+      function renderEmpty() {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        const badge = document.createElement("span");
+        badge.className = "empty-badge";
+        badge.textContent = state.view === "done" ? "✓" : ".";
+        const title = document.createElement("h3");
+        title.textContent = state.view === "done" ? "No completed missions yet" : "Clear skies here";
+        const copy = document.createElement("p");
+        copy.textContent =
+          state.view === "done"
+            ? "Finished assignments will collect here with their original level and deadline."
+            : "Add a mission when something needs your attention, or switch filters to see more.";
+        empty.append(badge, title, copy);
+        return empty;
+      }
+
+      function render() {
+        document.querySelectorAll("[data-view]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.view === state.view);
+        });
+        document.querySelectorAll("[data-level]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.level === state.levelFilter);
+        });
+        els.boardTitle.textContent =
+          state.view === "done" ? "Completed history" : state.view === "all" ? "All missions" : "Current missions";
+
+        updateStatus();
+        els.list.replaceChildren();
+        const groups = groupTasks(getFilteredTasks());
+        if (!groups.length) {
+          els.list.append(renderEmpty());
+          return;
+        }
+        groups.forEach(([label, tasks]) => {
+          const group = document.createElement("section");
+          group.className = "group";
+          const heading = document.createElement("h3");
+          heading.textContent = label;
+          group.append(heading, ...tasks.map(renderTask));
+          els.list.append(group);
+        });
+      }
+
+      function syncDraftControls() {
+        els.titleInput.value = state.draft.title;
+        els.dateInput.value = state.draft.pickedDate;
+        els.dateInput.hidden = state.draft.deadlineMode !== "pick";
+        document.querySelectorAll("[data-draft-level]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.draftLevel === state.draft.level);
+        });
+        document.querySelectorAll("[data-deadline-mode]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.deadlineMode === state.draft.deadlineMode);
+        });
+      }
+
+      function openPanel(taskId = null) {
+        const task = taskId ? state.tasks.find((item) => item.id === taskId) : null;
+        state.editingId = taskId;
+        state.draft = task
+          ? {
+              title: task.title,
+              level: task.level,
+              deadlineMode: task.deadline ? "pick" : "none",
+              pickedDate: task.deadline || "",
+            }
+          : {
+              title: "",
+              level: "must",
+              deadlineMode: "tomorrow",
+              pickedDate: isoToday(1),
+            };
+
+        els.panelTitle.textContent = task ? "Edit Task" : "Add Task";
+        els.submitButton.textContent = task ? "Save Changes" : "Add Task";
+        syncDraftControls();
+        els.modal.hidden = false;
+        requestAnimationFrame(() => els.titleInput.focus());
+      }
+
+      function closePanel() {
+        els.modal.hidden = true;
+        state.editingId = null;
+      }
+
+      function draftToDeadline() {
+        if (state.draft.deadlineMode === "today") return isoToday();
+        if (state.draft.deadlineMode === "tomorrow") return isoToday(1);
+        if (state.draft.deadlineMode === "pick") return state.draft.pickedDate || null;
+        return null;
+      }
+
+      function saveTask(event) {
+        event.preventDefault();
+        const title = els.titleInput.value.trim();
+        if (!title) return;
+        const deadline = draftToDeadline();
+
+        if (state.editingId) {
+          state.tasks = state.tasks.map((task) =>
+            task.id === state.editingId
+              ? {
+                  ...task,
+                  title,
+                  level: state.draft.level,
+                  deadline,
+                }
+              : task,
+          );
+        } else {
+          state.tasks.push({
+            id: crypto.randomUUID(),
+            title,
+            level: state.draft.level,
+            deadline,
+            completed: false,
+            createdAt: new Date().toISOString(),
+            completedAt: null,
+          });
+        }
+
+        saveTasks();
+        closePanel();
+        render();
+      }
+
+      function toggleTask(id) {
+        state.tasks = state.tasks.map((task) =>
+          task.id === id
+            ? {
+                ...task,
+                completed: !task.completed,
+                completedAt: task.completed ? null : new Date().toISOString(),
+              }
+            : task,
+        );
+        saveTasks();
+        render();
+      }
+
+      function deleteTask(id) {
+        const task = state.tasks.find((item) => item.id === id);
+        if (!task || !confirm(`Delete "${task.title}"?`)) return;
+        state.tasks = state.tasks.filter((item) => item.id !== id);
+        saveTasks();
+        render();
+      }
+
+      document.querySelectorAll("[data-view]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.view = button.dataset.view;
+          render();
+        });
+      });
+
+      document.querySelectorAll("[data-level]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.levelFilter = button.dataset.level;
+          render();
+        });
+      });
+
+      document.querySelector("#addMain").addEventListener("click", () => openPanel());
+      document.querySelector("#addFloat").addEventListener("click", () => openPanel());
+      document.querySelector("#closePanel").addEventListener("click", closePanel);
+      els.modal.addEventListener("mousedown", (event) => {
+        if (event.target === els.modal) closePanel();
+      });
+      els.form.addEventListener("submit", saveTask);
+      els.titleInput.addEventListener("input", (event) => {
+        state.draft.title = event.target.value;
+      });
+      els.dateInput.addEventListener("input", (event) => {
+        state.draft.pickedDate = event.target.value;
+      });
+
+      document.querySelectorAll("[data-draft-level]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.draft.level = button.dataset.draftLevel;
+          syncDraftControls();
+        });
+      });
+
+      document.querySelectorAll("[data-deadline-mode]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.draft.deadlineMode = button.dataset.deadlineMode;
+          if (state.draft.deadlineMode === "today") state.draft.pickedDate = isoToday();
+          if (state.draft.deadlineMode === "tomorrow") state.draft.pickedDate = isoToday(1);
+          syncDraftControls();
+        });
+      });
+
+      state.tasks = loadTasks();
+      render();
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/service-worker.js").catch(() => {
+            /* PWA installability should not block the task app. */
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
