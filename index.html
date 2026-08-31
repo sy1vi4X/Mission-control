@@ -14,6 +14,24 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="icon" href="/icons/icon-192.png" sizes="192x192" />
+    <script>
+      (() => {
+        const defaults = { accent: "lavender", theme: "light", density: "comfortable", reduceMotion: false };
+        try {
+          const saved = JSON.parse(localStorage.getItem("mission-control.settings.v1") || "{}");
+          const settings = { ...defaults, ...saved };
+          document.documentElement.dataset.accent = settings.accent;
+          document.documentElement.dataset.theme = settings.theme;
+          document.documentElement.dataset.density = settings.density;
+          document.documentElement.dataset.motion = settings.reduceMotion ? "reduced" : "full";
+        } catch {
+          document.documentElement.dataset.accent = defaults.accent;
+          document.documentElement.dataset.theme = defaults.theme;
+          document.documentElement.dataset.density = defaults.density;
+          document.documentElement.dataset.motion = "full";
+        }
+      })();
+    </script>
     <style>
       :root {
         --bg: #f7f7f5;
@@ -22,12 +40,74 @@
         --line: #e4e1da;
         --card: #ffffff;
         --soft: #efeeeb;
-        --violet: #6864d8;
-        --violet-soft: #ecebff;
+        --button-ink: #222326;
+        --button-text: #ffffff;
+        --accent: #6864d8;
+        --accent-soft: #ecebff;
+        --accent-ink: #5651bd;
         --must: #d95f4b;
         --should: #5f76d7;
         --side: #68a16a;
         --shadow: 0 18px 45px rgba(38, 37, 44, 0.08);
+        --sheet-shadow: 0 18px 45px rgba(38, 37, 44, 0.08);
+      }
+
+      html[data-accent="blue"] {
+        --accent: #3f73d8;
+        --accent-soft: #e7efff;
+        --accent-ink: #315bb3;
+      }
+
+      html[data-accent="pink"] {
+        --accent: #d9679b;
+        --accent-soft: #fde9f2;
+        --accent-ink: #af4778;
+      }
+
+      html[data-accent="green"] {
+        --accent: #5c9f72;
+        --accent-soft: #e7f4ea;
+        --accent-ink: #477d58;
+      }
+
+      html[data-accent="orange"] {
+        --accent: #d07a42;
+        --accent-soft: #f8eadf;
+        --accent-ink: #a85f31;
+      }
+
+      html[data-accent="monochrome"] {
+        --accent: #34353a;
+        --accent-soft: #eeeeef;
+        --accent-ink: #34353a;
+      }
+
+      html[data-theme="dark"] {
+        --bg: #171718;
+        --ink: #f1f0ed;
+        --muted: #aaa8b1;
+        --line: #36343b;
+        --card: #222226;
+        --soft: #2c2b30;
+        --button-ink: #f1f0ed;
+        --button-text: #171718;
+        --shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+        --sheet-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html[data-theme="system"] {
+          --bg: #171718;
+          --ink: #f1f0ed;
+          --muted: #aaa8b1;
+          --line: #36343b;
+          --card: #222226;
+          --soft: #2c2b30;
+          --button-ink: #f1f0ed;
+          --button-text: #171718;
+          --shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+          --sheet-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+        }
       }
 
       * {
@@ -42,9 +122,7 @@
         margin: 0;
         overflow-x: hidden;
         color: var(--ink);
-        background:
-          linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(247, 247, 245, 0.94)),
-          var(--bg);
+        background: var(--bg);
         font-family:
           Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
@@ -56,6 +134,10 @@
 
       button {
         cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: default;
       }
 
       .shell {
@@ -84,8 +166,8 @@
         margin-bottom: 16px;
         place-items: center;
         border-radius: 50%;
-        background: var(--violet-soft);
-        color: #5651bd;
+        background: var(--accent-soft);
+        color: var(--accent-ink);
         font-size: 13px;
         font-weight: 850;
       }
@@ -129,7 +211,7 @@
         border: 0;
         border-radius: 999px;
         background: var(--soft);
-        color: #55555f;
+        color: var(--ink);
         padding: 0 18px;
         font-weight: 760;
         transition:
@@ -146,7 +228,7 @@
       .tabs button.active,
       .filters button.active,
       .choices button.active {
-        background: var(--violet);
+        background: var(--accent);
         color: #fff;
       }
 
@@ -180,7 +262,7 @@
 
       .eyebrow {
         margin-bottom: 5px;
-        color: var(--violet);
+        color: var(--accent);
         font-size: 13px;
         font-weight: 850;
         text-transform: uppercase;
@@ -197,8 +279,8 @@
         min-height: 44px;
         border: 0;
         border-radius: 999px;
-        background: #222326;
-        color: #fff;
+        background: var(--button-ink);
+        color: var(--button-text);
         padding: 0 18px;
         font-weight: 850;
         box-shadow: 0 12px 28px rgba(34, 35, 38, 0.14);
@@ -209,6 +291,20 @@
         margin-right: 7px;
         font-size: 20px;
         line-height: 0;
+      }
+
+      .settings-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        background: var(--card);
+        color: var(--muted);
+        font-size: 20px;
+        box-shadow: 0 8px 20px rgba(35, 34, 40, 0.04);
       }
 
       .filters {
@@ -226,7 +322,7 @@
       }
 
       .group > h3 {
-        color: #56565f;
+        color: var(--muted);
         font-size: 13px;
         letter-spacing: 0;
         text-transform: uppercase;
@@ -238,12 +334,19 @@
         gap: 12px;
         align-items: center;
         min-height: 86px;
+        max-height: 180px;
         border: 1px solid var(--line);
         border-left-width: 5px;
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.9);
+        background: color-mix(in srgb, var(--card) 92%, transparent);
         padding: 16px;
         box-shadow: 0 8px 20px rgba(35, 34, 40, 0.04);
+        transition:
+          max-height 420ms ease,
+          padding 420ms ease,
+          opacity 260ms ease,
+          transform 420ms ease,
+          background 180ms ease;
       }
 
       .card.must {
@@ -256,7 +359,7 @@
 
       .card.side {
         border-left-color: var(--side);
-        background: rgba(255, 255, 255, 0.72);
+        background: color-mix(in srgb, var(--card) 78%, transparent);
       }
 
       .card.complete {
@@ -270,7 +373,7 @@
         place-items: center;
         border: 2px solid #d6d3ca;
         border-radius: 50%;
-        background: #fff;
+        background: var(--card);
         color: #fff;
         font-weight: 900;
         transition:
@@ -279,10 +382,38 @@
           transform 180ms ease;
       }
 
-      .complete .check {
+      .complete .check,
+      .completing .check {
         border-color: #a8d8a5;
         background: #74bd72;
         animation: complete-pop 240ms ease;
+      }
+
+      .card.completing {
+        overflow: hidden;
+        min-height: 0;
+        max-height: 0;
+        margin: -7px 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        opacity: 0;
+        transform: translateY(-4px) scale(0.992);
+        transition:
+          max-height 420ms ease 180ms,
+          margin 420ms ease 180ms,
+          padding 420ms ease 180ms,
+          opacity 260ms ease 140ms,
+          transform 420ms ease;
+      }
+
+      .card.completing h4 {
+        text-decoration: line-through;
+        text-decoration-color: color-mix(in srgb, var(--accent) 60%, transparent);
+      }
+
+      .card.completing .actions {
+        pointer-events: none;
+        opacity: 0.45;
       }
 
       .main {
@@ -326,7 +457,7 @@
       .card h4 {
         min-width: 0;
         overflow-wrap: anywhere;
-        color: #2a2b31;
+        color: var(--ink);
         font-size: 17px;
         font-weight: 760;
         line-height: 1.25;
@@ -357,8 +488,8 @@
         min-height: 34px;
         border: 1px solid var(--line);
         border-radius: 999px;
-        background: #fff;
-        color: #606069;
+        background: var(--card);
+        color: var(--muted);
         padding: 0 11px;
         font-size: 13px;
         font-weight: 720;
@@ -370,7 +501,7 @@
         gap: 9px;
         border: 1px dashed #d9d5cc;
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.62);
+        background: color-mix(in srgb, var(--card) 68%, transparent);
         padding: 46px 22px;
         text-align: center;
       }
@@ -381,8 +512,8 @@
         height: 42px;
         place-items: center;
         border-radius: 50%;
-        background: var(--violet-soft);
-        color: var(--violet);
+        background: var(--accent-soft);
+        color: var(--accent);
         font-size: 22px;
         font-weight: 900;
       }
@@ -406,7 +537,7 @@
         height: 58px;
         border: 0;
         border-radius: 50%;
-        background: var(--violet);
+        background: var(--accent);
         color: #fff;
         font-size: 32px;
         line-height: 1;
@@ -427,9 +558,9 @@
         width: min(100%, 520px);
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: #fff;
+        background: var(--card);
         padding: 22px;
-        box-shadow: var(--shadow);
+        box-shadow: var(--sheet-shadow);
       }
 
       .panel-head {
@@ -456,7 +587,7 @@
       }
 
       .field > span {
-        color: #5c5c64;
+        color: var(--muted);
         font-size: 13px;
         font-weight: 850;
         text-transform: uppercase;
@@ -467,15 +598,15 @@
         min-height: 46px;
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: #faf9f7;
+        background: color-mix(in srgb, var(--card) 78%, var(--soft));
         color: var(--ink);
         padding: 0 14px;
         outline: none;
       }
 
       .field input:focus {
-        border-color: var(--violet);
-        box-shadow: 0 0 0 4px var(--violet-soft);
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px var(--accent-soft);
       }
 
       .choices {
@@ -500,6 +631,171 @@
 
       .submit {
         width: 100%;
+      }
+
+      .settings-panel {
+        width: min(100%, 560px);
+      }
+
+      .settings-section {
+        display: grid;
+        gap: 14px;
+      }
+
+      .settings-section + .settings-section {
+        margin-top: 22px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+      }
+
+      .settings-section h4 {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 850;
+        text-transform: uppercase;
+      }
+
+      .setting-row {
+        display: grid;
+        gap: 9px;
+      }
+
+      .setting-row > span {
+        font-size: 15px;
+        font-weight: 760;
+      }
+
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .swatch {
+        display: grid;
+        min-height: 58px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 760;
+      }
+
+      .swatch::before {
+        content: "";
+        display: block;
+        width: 18px;
+        height: 18px;
+        margin-bottom: 4px;
+        border-radius: 50%;
+        background: var(--swatch-color);
+      }
+
+      .swatch.active {
+        border-color: var(--accent);
+        color: var(--ink);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .segmented {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .segmented.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .segmented button {
+        min-height: 42px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--ink);
+        padding: 0 12px;
+        font-weight: 760;
+      }
+
+      .segmented button.active {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        min-height: 48px;
+      }
+
+      .switch {
+        position: relative;
+        width: 52px;
+        height: 30px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--soft);
+      }
+
+      .switch::after {
+        content: "";
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--card);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.16);
+        transition: transform 180ms ease;
+      }
+
+      .switch.active {
+        background: var(--accent);
+      }
+
+      .switch.active::after {
+        transform: translateX(22px);
+      }
+
+      html[data-density="compact"] .shell {
+        gap: 20px;
+      }
+
+      html[data-density="compact"] .sidebar {
+        gap: 20px;
+      }
+
+      html[data-density="compact"] .board {
+        padding-top: 18px;
+      }
+
+      html[data-density="compact"] .filters {
+        margin-bottom: 18px;
+      }
+
+      html[data-density="compact"] .group {
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      html[data-density="compact"] .card {
+        min-height: 72px;
+        padding: 12px 14px;
+      }
+
+      html[data-theme="dark"] .backdrop {
+        background: rgba(0, 0, 0, 0.42);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html[data-theme="system"] .backdrop {
+          background: rgba(0, 0, 0, 0.42);
+        }
       }
 
       [hidden] {
@@ -604,6 +900,24 @@
         .deadline-choices {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+
+        .swatches {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .settings-panel {
+          max-height: calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+          overflow: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+      }
+
+      html[data-motion="reduced"] *,
+      html[data-motion="reduced"] *::before,
+      html[data-motion="reduced"] *::after {
+        animation-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -636,6 +950,10 @@
           <span id="openCount">0 open</span>
           <span id="weekCount">0 done this week</span>
         </div>
+
+        <button class="settings-button" id="settingsOpen" type="button" aria-label="Open settings" title="Settings">
+          ⚙
+        </button>
       </aside>
 
       <section class="board">
@@ -694,11 +1012,69 @@
           <button class="submit" id="submitButton" type="submit">Add Task</button>
         </form>
       </div>
+
+      <div class="backdrop" id="settingsModal" role="presentation" hidden>
+        <section class="panel settings-panel" aria-labelledby="settingsTitle">
+          <div class="panel-head">
+            <h3 id="settingsTitle">Settings</h3>
+            <button id="settingsClose" aria-label="Close settings" type="button">x</button>
+          </div>
+
+          <div class="settings-section">
+            <h4>Appearance</h4>
+            <div class="setting-row">
+              <span>Accent Color</span>
+              <div class="swatches" id="accentChoices">
+                <button class="swatch" style="--swatch-color: #6864d8" data-setting-accent="lavender" type="button">Lavender</button>
+                <button class="swatch" style="--swatch-color: #3f73d8" data-setting-accent="blue" type="button">Blue</button>
+                <button class="swatch" style="--swatch-color: #d9679b" data-setting-accent="pink" type="button">Pink</button>
+                <button class="swatch" style="--swatch-color: #5c9f72" data-setting-accent="green" type="button">Green</button>
+                <button class="swatch" style="--swatch-color: #d07a42" data-setting-accent="orange" type="button">Orange</button>
+                <button class="swatch" style="--swatch-color: #34353a" data-setting-accent="monochrome" type="button">Mono</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <span>Theme</span>
+              <div class="segmented" id="themeChoices">
+                <button data-setting-theme="light" type="button">Light</button>
+                <button data-setting-theme="dark" type="button">Dark</button>
+                <button data-setting-theme="system" type="button">System</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <span>Density</span>
+              <div class="segmented two" id="densityChoices">
+                <button data-setting-density="comfortable" type="button">Comfortable</button>
+                <button data-setting-density="compact" type="button">Compact</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <div class="toggle-row">
+              <div>
+                <h4>Reduce animations</h4>
+                <p class="status">Shorten completion motion and transitions.</p>
+              </div>
+              <button class="switch" id="motionSwitch" type="button" role="switch" aria-checked="false"></button>
+            </div>
+          </div>
+        </section>
+      </div>
     </main>
 
     <script>
       const STORAGE_KEY = "mission-control.tasks.v1";
       const INIT_KEY = "mission-control.initialized.v1";
+      const SETTINGS_KEY = "mission-control.settings.v1";
+      const defaultSettings = {
+        accent: "lavender",
+        theme: "light",
+        density: "comfortable",
+        reduceMotion: false,
+      };
       const levelMeta = {
         must: { label: "MUST", mark: "M" },
         should: { label: "SHOULD", mark: "S" },
@@ -710,6 +1086,9 @@
         view: "todo",
         levelFilter: "all",
         editingId: null,
+        completingIds: new Set(),
+        completeTimers: new Map(),
+        settings: { ...defaultSettings },
         draft: {
           title: "",
           level: "must",
@@ -730,7 +1109,64 @@
         submitButton: document.querySelector("#submitButton"),
         titleInput: document.querySelector("#titleInput"),
         dateInput: document.querySelector("#dateInput"),
+        settingsModal: document.querySelector("#settingsModal"),
+        motionSwitch: document.querySelector("#motionSwitch"),
       };
+
+      function loadSettings() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+          return {
+            ...defaultSettings,
+            ...saved,
+            accent: ["lavender", "blue", "pink", "green", "orange", "monochrome"].includes(saved.accent)
+              ? saved.accent
+              : defaultSettings.accent,
+            theme: ["light", "dark", "system"].includes(saved.theme) ? saved.theme : defaultSettings.theme,
+            density: ["comfortable", "compact"].includes(saved.density) ? saved.density : defaultSettings.density,
+            reduceMotion: Boolean(saved.reduceMotion),
+          };
+        } catch {
+          localStorage.removeItem(SETTINGS_KEY);
+          return { ...defaultSettings };
+        }
+      }
+
+      function saveSettings() {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+      }
+
+      function applySettings() {
+        document.documentElement.dataset.accent = state.settings.accent;
+        document.documentElement.dataset.theme = state.settings.theme;
+        document.documentElement.dataset.density = state.settings.density;
+        document.documentElement.dataset.motion = state.settings.reduceMotion ? "reduced" : "full";
+
+        document.querySelectorAll("[data-setting-accent]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.settingAccent === state.settings.accent);
+        });
+        document.querySelectorAll("[data-setting-theme]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.settingTheme === state.settings.theme);
+        });
+        document.querySelectorAll("[data-setting-density]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.settingDensity === state.settings.density);
+        });
+        els.motionSwitch.classList.toggle("active", state.settings.reduceMotion);
+        els.motionSwitch.setAttribute("aria-checked", String(state.settings.reduceMotion));
+      }
+
+      function setSetting(key, value) {
+        state.settings[key] = value;
+        saveSettings();
+        applySettings();
+      }
+
+      function prefersReducedMotion() {
+        return (
+          state.settings.reduceMotion ||
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        );
+      }
 
       function isoToday(offset = 0) {
         const date = new Date();
@@ -891,11 +1327,14 @@
       }
 
       function renderTask(task) {
+        const isCompleting = state.completingIds.has(task.id);
         const card = document.createElement("article");
-        card.className = `card ${task.level}${task.completed ? " complete" : ""}`;
+        card.className = `card ${task.level}${task.completed || isCompleting ? " complete" : ""}${isCompleting ? " completing" : ""}`;
+        card.dataset.taskId = task.id;
 
-        const check = makeButton(task.completed ? "✓" : "", "check", () => toggleTask(task.id));
+        const check = makeButton(task.completed || isCompleting ? "✓" : "", "check", () => toggleTask(task.id));
         check.setAttribute("aria-label", task.completed ? "Restore task" : "Complete task");
+        check.disabled = isCompleting;
         card.append(check);
 
         const main = document.createElement("div");
@@ -924,10 +1363,11 @@
 
         const actions = document.createElement("div");
         actions.className = "actions";
-        actions.append(
-          makeButton("Edit", "", () => openPanel(task.id)),
-          makeButton("Delete", "", () => deleteTask(task.id)),
-        );
+        const editButton = makeButton("Edit", "", () => openPanel(task.id));
+        const deleteButton = makeButton("Delete", "", () => deleteTask(task.id));
+        editButton.disabled = isCompleting;
+        deleteButton.disabled = isCompleting;
+        actions.append(editButton, deleteButton);
         card.append(actions);
         return card;
       }
@@ -989,6 +1429,7 @@
       }
 
       function openPanel(taskId = null) {
+        if (taskId && state.completingIds.has(taskId)) return;
         const task = taskId ? state.tasks.find((item) => item.id === taskId) : null;
         state.editingId = taskId;
         state.draft = task
@@ -1059,12 +1500,62 @@
       }
 
       function toggleTask(id) {
+        const task = state.tasks.find((item) => item.id === id);
+        if (!task || state.completingIds.has(id)) return;
+
+        if (task.completed) {
+          state.tasks = state.tasks.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  completed: false,
+                  completedAt: null,
+                }
+              : item,
+          );
+          saveTasks();
+          render();
+          return;
+        }
+
+        startCompletion(id);
+      }
+
+      function startCompletion(id) {
+        if (state.completingIds.has(id)) return;
+
+        if (prefersReducedMotion()) {
+          finishCompletion(id);
+          return;
+        }
+
+        state.completingIds.add(id);
+        const card = document.querySelector(`[data-task-id="${CSS.escape(id)}"]`);
+        if (card) {
+          card.classList.add("complete");
+          card.querySelector(".check").textContent = "✓";
+          card.querySelectorAll("button").forEach((button) => {
+            button.disabled = true;
+          });
+          requestAnimationFrame(() => card.classList.add("completing"));
+        } else {
+          render();
+        }
+        const timer = window.setTimeout(() => finishCompletion(id), 680);
+        state.completeTimers.set(id, timer);
+      }
+
+      function finishCompletion(id) {
+        const timer = state.completeTimers.get(id);
+        if (timer) window.clearTimeout(timer);
+        state.completeTimers.delete(id);
+        state.completingIds.delete(id);
         state.tasks = state.tasks.map((task) =>
           task.id === id
             ? {
                 ...task,
-                completed: !task.completed,
-                completedAt: task.completed ? null : new Date().toISOString(),
+                completed: true,
+                completedAt: task.completedAt || new Date().toISOString(),
               }
             : task,
         );
@@ -1073,11 +1564,21 @@
       }
 
       function deleteTask(id) {
+        if (state.completingIds.has(id)) return;
         const task = state.tasks.find((item) => item.id === id);
         if (!task || !confirm(`Delete "${task.title}"?`)) return;
         state.tasks = state.tasks.filter((item) => item.id !== id);
         saveTasks();
         render();
+      }
+
+      function openSettings() {
+        applySettings();
+        els.settingsModal.hidden = false;
+      }
+
+      function closeSettings() {
+        els.settingsModal.hidden = true;
       }
 
       document.querySelectorAll("[data-view]").forEach((button) => {
@@ -1096,6 +1597,11 @@
 
       document.querySelector("#addMain").addEventListener("click", () => openPanel());
       document.querySelector("#addFloat").addEventListener("click", () => openPanel());
+      document.querySelector("#settingsOpen").addEventListener("click", openSettings);
+      document.querySelector("#settingsClose").addEventListener("click", closeSettings);
+      els.settingsModal.addEventListener("mousedown", (event) => {
+        if (event.target === els.settingsModal) closeSettings();
+      });
       document.querySelector("#closePanel").addEventListener("click", closePanel);
       els.modal.addEventListener("mousedown", (event) => {
         if (event.target === els.modal) closePanel();
@@ -1124,6 +1630,22 @@
         });
       });
 
+      document.querySelectorAll("[data-setting-accent]").forEach((button) => {
+        button.addEventListener("click", () => setSetting("accent", button.dataset.settingAccent));
+      });
+
+      document.querySelectorAll("[data-setting-theme]").forEach((button) => {
+        button.addEventListener("click", () => setSetting("theme", button.dataset.settingTheme));
+      });
+
+      document.querySelectorAll("[data-setting-density]").forEach((button) => {
+        button.addEventListener("click", () => setSetting("density", button.dataset.settingDensity));
+      });
+
+      els.motionSwitch.addEventListener("click", () => setSetting("reduceMotion", !state.settings.reduceMotion));
+
+      state.settings = loadSettings();
+      applySettings();
       state.tasks = loadTasks();
       render();
 

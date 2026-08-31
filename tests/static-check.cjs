@@ -17,8 +17,15 @@ assert.match(index, /rel="manifest" href="\/manifest\.webmanifest"/);
 assert.match(index, /navigator\.serviceWorker\.register\("\/service-worker\.js"\)/);
 assert.match(index, /mission-control\.tasks\.v1/);
 assert.match(index, /mission-control\.initialized\.v1/);
+assert.match(index, /mission-control\.settings\.v1/);
 assert.match(index, /env\(safe-area-inset-bottom\)/);
 assert.match(index, /overflow-x:\s*hidden/);
+assert.match(index, /data-setting-accent="lavender"/);
+assert.match(index, /data-setting-theme="dark"/);
+assert.match(index, /data-setting-density="compact"/);
+assert.match(index, /role="switch"/);
+assert.match(index, /completingIds/);
+assert.match(index, /setTimeout\(\(\) => finishCompletion\(id\), 680\)/);
 
 assert.equal(manifest.name, "MISSION CONTROL");
 assert.equal(manifest.short_name, "Mission");
@@ -30,7 +37,7 @@ assert.ok(manifest.icons.some((icon) => icon.sizes === "192x192" && icon.src ===
 assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.src === "/icons/icon-512.png"));
 assert.ok(manifest.icons.some((icon) => icon.purpose === "maskable"));
 
-assert.match(sw, /CACHE_NAME = "mission-control-shell-v1"/);
+assert.match(sw, /CACHE_NAME = "mission-control-shell-v2"/);
 assert.match(sw, /caches\.match\("\/index\.html"\)/);
 assert.match(sw, /self\.skipWaiting/);
 assert.equal(vercel.outputDirectory, "dist");
