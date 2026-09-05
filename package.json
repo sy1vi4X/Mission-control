@@ -8,6 +8,6 @@
     "dev": "node serve.cjs",
     "start": "node serve.cjs",
     "build": "node scripts/build-static.cjs",
-    "test": "npm run build && node tests/static-check.cjs"
+    "test": "npm run build && node tests/static-check.cjs && node --test tests/workflow.test.cjs"
   }
 }

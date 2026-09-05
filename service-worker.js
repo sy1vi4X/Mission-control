@@ -1,4 +1,4 @@
-const CACHE_NAME = "mission-control-shell-v2";
+const CACHE_NAME = "mission-control-shell-v5";
 const SHELL_ASSETS = [
   "/",
   "/index.html",
