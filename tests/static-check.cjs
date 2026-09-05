@@ -42,7 +42,7 @@ assert.ok(manifest.icons.some((icon) => icon.sizes === "192x192" && icon.src ===
 assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.src === "/icons/icon-512.png"));
 assert.ok(manifest.icons.some((icon) => icon.purpose === "maskable"));
 
-assert.match(sw, /CACHE_NAME = "mission-control-shell-v4"/);
+assert.match(sw, /CACHE_NAME = "mission-control-shell-v5"/);
 assert.match(sw, /caches\.match\("\/index\.html"\)/);
 assert.match(sw, /self\.skipWaiting/);
 assert.equal(vercel.outputDirectory, "dist");

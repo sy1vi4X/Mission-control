@@ -314,6 +314,15 @@
       .undo-bar { position: fixed; z-index: 20; bottom: calc(20px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(560px, calc(100% - 32px)); display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); box-shadow: 0 8px 28px #0002; }
       .undo-bar span { flex: 1; min-width: 0; overflow-wrap: anywhere; max-height: 4.5em; overflow: auto; }
       .undo-bar button { flex-shrink: 0; }
+      .date-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: -8px 0 12px; }
+      .date-filters button { min-height: 40px; border: 1px solid var(--line); padding: 8px 12px; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 14px; }
+      .date-filters button.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+      .filter-summary { margin: 0 0 22px; font-size: 14px; color: var(--muted); }
+      .form-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+      .form-actions > button { flex: 1 1 150px; }
+      .add-another { min-height: 44px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font: inherit; font-weight: 700; }
+      .save-feedback { color: var(--accent-ink); font-size: 14px; overflow-wrap: anywhere; }
+      :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
       .storage-error { padding: 12px; margin-bottom: 16px; border: 1px solid var(--must); border-radius: 8px; }
       body:has(.undo-bar:not([hidden])) .add-float { bottom: calc(145px + env(safe-area-inset-bottom)); }
 
@@ -828,8 +837,16 @@
         }
 
         .sidebar {
-          position: static;
+          position: relative;
+          top: auto;
+          gap: 18px;
           padding: 8px 0 20px;
+        }
+
+        .sidebar .settings-button {
+          position: absolute;
+          top: 4px;
+          right: 0;
         }
 
         .tabs {
@@ -839,6 +856,8 @@
         .tabs button {
           flex: 1 1 0;
           text-align: center;
+          white-space: nowrap;
+          padding: 0 10px;
         }
 
         .stats {
@@ -983,6 +1002,14 @@
           <input id="searchInput" type="search" aria-label="Search tasks" placeholder="Search tasks…" />
           <button id="clearSearch" type="button" hidden>Clear</button>
         </div>
+        <div class="date-filters" aria-label="Deadline filter">
+          <button class="active" data-date-filter="all" type="button" aria-pressed="true">All dates</button>
+          <button data-date-filter="overdue" type="button" aria-pressed="false">Overdue</button>
+          <button data-date-filter="today" type="button" aria-pressed="false">Today</button>
+          <button data-date-filter="week" type="button" aria-pressed="false" title="Today and the next six days">Next 7 days</button>
+          <button data-date-filter="none" type="button" aria-pressed="false">No deadline</button>
+        </div>
+        <p class="filter-summary" id="filterSummary" role="status" aria-live="polite"></p>
         <p class="storage-error" id="storageError" role="alert" hidden></p>
         <div class="list" id="taskList"></div>
       </section>
@@ -1021,7 +1048,11 @@
             <input class="date-input" id="dateInput" type="date" hidden />
           </div>
 
-          <button class="submit" id="submitButton" type="submit">Add Task</button>
+          <p class="save-feedback" id="saveFeedback" role="status" aria-live="polite" hidden></p>
+          <div class="form-actions">
+            <button class="submit" id="submitButton" type="submit">Add Task</button>
+            <button class="add-another" id="addAnother" type="submit">Add & keep open</button>
+          </div>
         </form>
       </div>
 
@@ -1102,6 +1133,7 @@
         tasks: [],
         view: "todo",
         levelFilter: "all",
+        deadlineFilter: "all",
         search: "",
         undoStack: [],
         storageBlocked: false,
@@ -1356,6 +1388,15 @@
         return formatDateLabel(task.deadline).toUpperCase();
       }
 
+      function matchesDeadline(task) {
+        const date = task.deadline;
+        if (state.deadlineFilter === "overdue") return !!date && date < isoToday();
+        if (state.deadlineFilter === "today") return date === isoToday();
+        if (state.deadlineFilter === "week") return !!date && date >= isoToday() && date <= isoToday(6);
+        if (state.deadlineFilter === "none") return !date;
+        return true;
+      }
+
       function getFilteredTasks() {
         return state.tasks
           .filter((task) => {
@@ -1363,6 +1404,7 @@
             if (state.view === "done" && (!task.completed || state.completingIds.has(task.id))) return false;
             if (state.levelFilter !== "all" && task.level !== state.levelFilter) return false;
             if (state.search && !task.title.toLocaleLowerCase().includes(state.search)) return false;
+            if (!matchesDeadline(task)) return false;
             return true;
           })
           .sort((a, b) => (state.view === "done" ? compareDone(a, b) : compareTodo(a, b)));
@@ -1479,8 +1521,15 @@
           state.view === "done" ? "Completed history" : state.view === "all" ? "All missions" : "Current missions";
 
         updateStatus();
+        document.querySelectorAll("[data-date-filter]").forEach(button => {
+          const active = button.dataset.dateFilter === state.deadlineFilter;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-pressed", String(active));
+        });
         els.list.replaceChildren();
-        const groups = groupTasks(getFilteredTasks());
+        const filtered = getFilteredTasks();
+        document.querySelector("#filterSummary").textContent = `${filtered.length} ${filtered.length === 1 ? "task" : "tasks"} shown`;
+        const groups = groupTasks(filtered);
         if (!groups.length) {
           els.list.append(renderEmpty());
           return;
@@ -1527,6 +1576,8 @@
 
         els.panelTitle.textContent = task ? "Edit Task" : "Add Task";
         els.submitButton.textContent = task ? "Save Changes" : "Add Task";
+        document.querySelector("#addAnother").hidden = !!task;
+        document.querySelector("#saveFeedback").hidden = true;
         syncDraftControls();
         els.modal.hidden = false;
         requestAnimationFrame(() => els.titleInput.focus());
@@ -1576,7 +1627,15 @@
         }
 
         if (!saveTasks(tasks)) return;
-        closePanel();
+        const keepOpen = !state.editingId && event.submitter?.id === "addAnother";
+        if (keepOpen) {
+          state.draft.title = "";
+          syncDraftControls();
+          const feedback = document.querySelector("#saveFeedback");
+          feedback.textContent = `Added “${title}”. Ready for the next task.`;
+          feedback.hidden = false;
+          els.titleInput.focus();
+        } else closePanel();
         render();
       }
 
@@ -1709,6 +1768,12 @@
 
       els.motionSwitch.addEventListener("click", () => setSetting("reduceMotion", !state.settings.reduceMotion));
 
+      document.querySelectorAll("[data-date-filter]").forEach(button => {
+        button.addEventListener("click", () => {
+          state.deadlineFilter = button.dataset.dateFilter;
+          render();
+        });
+      });
       document.querySelector("#searchInput").addEventListener("input", event => {
         state.search = event.target.value.trim().toLocaleLowerCase();
         document.querySelector("#clearSearch").hidden = !event.target.value;

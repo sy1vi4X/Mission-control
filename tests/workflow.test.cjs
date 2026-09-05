@@ -60,3 +60,18 @@ test('local dates, year rollover and done labels respect device timezone',()=>{
 test('HTTP fallback IDs work and reduced motion saves immediately',()=>{
  const a=app(undefined,{noUUID:true,reduced:true});a.run("openPanel();els.titleInput.value='HTTP task';saveTask({preventDefault(){}})");assert.equal(a.saved().length,2);assert.notEqual(a.saved()[1].id,'qa-1');a.run("toggleTask('qa-1')");assert.equal(a.saved()[0].completed,true);assert.equal(a.timers.size,0);
 });
+test('deadline views include exact next-seven-day boundary and compose with search and priority',()=>{
+ const a=app();a.run("state.tasks=[{...state.tasks[0],id:'past',deadline:isoToday(-1)},{...state.tasks[0],id:'today',deadline:isoToday()},{...state.tasks[0],id:'last',deadline:isoToday(6),level:'side'},{...state.tasks[0],id:'outside',deadline:isoToday(7)},{...state.tasks[0],id:'none',deadline:null}]");
+ for(const [filter,ids] of [['overdue','past'],['today','today'],['week','today,last'],['none','none']]) {a.run(`state.deadlineFilter='${filter}'`); assert.equal(a.run("getFilteredTasks().map(t=>t.id).join(',')"),ids);}
+ a.run("state.deadlineFilter='week';state.levelFilter='side'");assert.equal(a.run('getFilteredTasks().length'),1);a.run("state.search='missing'");assert.equal(a.run('getFilteredTasks().length'),0);
+});
+test('continuous add clears title but keeps chosen level/date and rejects repeat clicks',()=>{
+ const a=app();a.run("openPanel();els.titleInput.value='First';state.draft.level='should';state.draft.deadlineMode='pick';state.draft.pickedDate='2026-12-31';saveTask({preventDefault(){},submitter:{id:'addAnother'}})");
+ assert.equal(a.saved().length,2);assert.equal(a.run('els.modal.hidden'),false);assert.equal(a.run('els.titleInput.value'),'');assert.equal(a.run('state.draft.level'),'should');assert.equal(a.run('state.draft.pickedDate'),'2026-12-31');
+ a.run("saveTask({preventDefault(){},submitter:{id:'addAnother'}})");assert.equal(a.saved().length,2);
+ a.run("els.titleInput.value='Second';saveTask({preventDefault(){}})");assert.equal(a.saved().length,3);assert.equal(a.saved()[2].deadline,'2026-12-31');assert.equal(a.saved()[2].level,'should');assert.equal(a.run('els.modal.hidden'),true);
+});
+test('continuous add retains draft on storage failure and never activates when editing',()=>{
+ const a=app();a.run("openPanel();els.titleInput.value='Unsaved'");a.options.failWrite=true;a.run("saveTask({preventDefault(){},submitter:{id:'addAnother'}})");assert.equal(a.saved().length,1);assert.equal(a.run('els.titleInput.value'),'Unsaved');a.options.failWrite=false;
+ a.run("openPanel('qa-1');els.titleInput.value='Edited';saveTask({preventDefault(){},submitter:{id:'addAnother'}})");assert.equal(a.saved().length,1);assert.equal(a.saved()[0].title,'Edited');assert.equal(a.run('els.modal.hidden'),true);
+});

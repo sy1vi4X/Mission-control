@@ -12,6 +12,6 @@ Vercel uses `vercel.json`: no framework, `npm run build`, output `dist`. Product
 
 Tasks and settings stay in the current browser and origin. Keys remain `mission-control.tasks.v1`, `mission-control.initialized.v1`, and `mission-control.settings.v1`; switching origin does not transfer tasks. Existing data is not migrated.
 
-Search appears below priority filters and combines with the selected task view. Completion, restore and confirmed deletion offer Undo at the bottom; up to 20 actions are retained until page refresh or dismissal. Saved tasks persist independently of this temporary undo history.
+Search appears below priority filters and combines with the selected task view. Deadline chips show overdue, today, the next seven days (today plus six), or undated tasks. The Add & keep open action clears only the title and retains the chosen priority/deadline for the next task. Completion, restore and confirmed deletion offer Undo at the bottom; up to 20 actions are retained until page refresh or dismissal. Saved tasks persist independently of this temporary undo history.
 
 See `UPDATE-2026-09-05.md` for reproduction evidence, exact verification coverage, outstanding release gates and rollback instructions. This checkout's update is not yet published.
