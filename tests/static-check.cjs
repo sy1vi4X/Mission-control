@@ -6,6 +6,11 @@ const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
 const index = read("index.html");
+const ids = [...index.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
+assert.equal(new Set(ids).size, ids.length, "Element IDs must be unique");
+for (const script of index.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+  new (require("node:vm").Script)(script[1]);
+}
 const manifest = JSON.parse(read("manifest.webmanifest"));
 const sw = read("service-worker.js");
 const vercel = JSON.parse(read("vercel.json"));
@@ -37,7 +42,7 @@ assert.ok(manifest.icons.some((icon) => icon.sizes === "192x192" && icon.src ===
 assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.src === "/icons/icon-512.png"));
 assert.ok(manifest.icons.some((icon) => icon.purpose === "maskable"));
 
-assert.match(sw, /CACHE_NAME = "mission-control-shell-v2"/);
+assert.match(sw, /CACHE_NAME = "mission-control-shell-v4"/);
 assert.match(sw, /caches\.match\("\/index\.html"\)/);
 assert.match(sw, /self\.skipWaiting/);
 assert.equal(vercel.outputDirectory, "dist");

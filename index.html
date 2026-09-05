@@ -307,9 +307,16 @@
         box-shadow: 0 8px 20px rgba(35, 34, 40, 0.04);
       }
 
-      .filters {
-        margin-bottom: 26px;
-      }
+      .filters { margin-bottom: 14px; }
+      .search-row { display: flex; gap: 8px; margin-bottom: 24px; }
+      .search-row input { flex: 1; min-width: 0; width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; }
+      .search-row button, .undo-bar button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); font: inherit; }
+      .undo-bar { position: fixed; z-index: 20; bottom: calc(20px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(560px, calc(100% - 32px)); display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); box-shadow: 0 8px 28px #0002; }
+      .undo-bar span { flex: 1; min-width: 0; overflow-wrap: anywhere; max-height: 4.5em; overflow: auto; }
+      .undo-bar button { flex-shrink: 0; }
+      .storage-error { padding: 12px; margin-bottom: 16px; border: 1px solid var(--must); border-radius: 8px; }
+      body:has(.undo-bar:not([hidden])) .add-float { bottom: calc(145px + env(safe-area-inset-bottom)); }
+
 
       .list,
       .group {
@@ -334,7 +341,7 @@
         gap: 12px;
         align-items: center;
         min-height: 86px;
-        max-height: 180px;
+        max-height: none;
         border: 1px solid var(--line);
         border-left-width: 5px;
         border-radius: 8px;
@@ -972,6 +979,11 @@
           <button data-level="side" type="button">SIDE QUEST</button>
         </div>
 
+        <div class="search-row">
+          <input id="searchInput" type="search" aria-label="Search tasks" placeholder="Search tasks…" />
+          <button id="clearSearch" type="button" hidden>Clear</button>
+        </div>
+        <p class="storage-error" id="storageError" role="alert" hidden></p>
         <div class="list" id="taskList"></div>
       </section>
 
@@ -1065,6 +1077,11 @@
       </div>
     </main>
 
+    <div class="undo-bar" id="undoBar" hidden>
+      <span id="undoMessage" role="status" aria-live="polite"></span>
+      <button id="undoButton" type="button">Undo</button>
+      <button id="dismissUndo" type="button" aria-label="Dismiss undo">×</button>
+    </div>
     <script>
       const STORAGE_KEY = "mission-control.tasks.v1";
       const INIT_KEY = "mission-control.initialized.v1";
@@ -1085,6 +1102,9 @@
         tasks: [],
         view: "todo",
         levelFilter: "all",
+        search: "",
+        undoStack: [],
+        storageBlocked: false,
         editingId: null,
         completingIds: new Set(),
         completeTimers: new Map(),
@@ -1172,7 +1192,16 @@
         const date = new Date();
         date.setHours(12, 0, 0, 0);
         date.setDate(date.getDate() + offset);
-        return date.toISOString().slice(0, 10);
+        return localDate(date);
+      }
+
+      function localDate(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      }
+
+      function newTaskId() {
+        if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+        return Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, "0")).join("");
       }
 
       function createDemoTasks() {
@@ -1208,27 +1237,76 @@
         );
       }
 
+      function storageError(message) {
+        const error = document.querySelector("#storageError");
+        error.textContent = message;
+        error.hidden = false;
+      }
+
       function loadTasks() {
         try {
           const stored = localStorage.getItem(STORAGE_KEY);
-          if (stored) {
+          if (stored !== null) {
             const parsed = JSON.parse(stored);
-            if (Array.isArray(parsed)) return parsed.filter(isTask);
+            if (!Array.isArray(parsed) || !parsed.every(isTask)) throw new Error("Invalid task data");
+            return parsed;
           }
+          if (localStorage.getItem(INIT_KEY)) return [];
+          const demo = createDemoTasks();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(demo));
+          localStorage.setItem(INIT_KEY, "true");
+          return demo;
         } catch {
-          localStorage.removeItem(STORAGE_KEY);
+          state.storageBlocked = true;
+          storageError("Saved tasks could not be read. Your stored data has been kept unchanged. Editing is paused; reload after recovering the data or enabling browser storage.");
+          return [];
         }
-
-        if (localStorage.getItem(INIT_KEY)) return [];
-        const demo = createDemoTasks();
-        localStorage.setItem(INIT_KEY, "true");
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(demo));
-        return demo;
       }
 
-      function saveTasks() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.tasks));
-        localStorage.setItem(INIT_KEY, "true");
+      function saveTasks(tasks = state.tasks) {
+        if (state.storageBlocked) return false;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+        } catch {
+          storageError("Could not save. Nothing was changed. Free browser storage and try again.");
+          return false;
+        }
+        state.tasks = tasks;
+        document.querySelector("#storageError").hidden = true;
+        return true;
+      }
+
+      function rememberAction(kind, task, index) {
+        state.undoStack.push({ kind, task: { ...task }, index });
+        if (state.undoStack.length > 20) state.undoStack.shift();
+        renderUndo();
+      }
+
+      function renderUndo() {
+        const action = state.undoStack.at(-1);
+        document.querySelector("#undoBar").hidden = !action;
+        document.querySelector("#undoMessage").textContent = action ? `${action.kind}: ${action.task.title}` : "";
+      }
+
+      function undoLastAction() {
+        const action = state.undoStack.at(-1);
+        if (!action) return;
+        const tasks = state.tasks.slice();
+        const index = tasks.findIndex(task => task.id === action.task.id);
+        if (action.kind === "Deleted") {
+          if (index !== -1) return;
+          tasks.splice(Math.min(action.index, tasks.length), 0, action.task);
+        } else {
+          if (index === -1) return;
+          tasks[index] = { ...tasks[index], completed: action.task.completed, completedAt: action.task.completedAt };
+        }
+        if (!saveTasks(tasks)) return;
+        window.clearTimeout(state.completeTimers.get(action.task.id));
+        state.completeTimers.delete(action.task.id);
+        state.completingIds.delete(action.task.id);
+        state.undoStack.pop();
+        renderUndo();
+        render();
       }
 
       function deadlineValue(task) {
@@ -1267,7 +1345,7 @@
 
       function sectionLabel(task) {
         if (state.view === "done") {
-          return task.completedAt ? formatDateLabel(task.completedAt.slice(0, 10)).toUpperCase() : "COMPLETED";
+          return task.completedAt ? formatDateLabel(localDate(new Date(task.completedAt))).toUpperCase() : "COMPLETED";
         }
         if (!task.deadline) return "NO DEADLINE";
         const today = isoToday();
@@ -1281,9 +1359,10 @@
       function getFilteredTasks() {
         return state.tasks
           .filter((task) => {
-            if (state.view === "todo" && task.completed) return false;
-            if (state.view === "done" && !task.completed) return false;
+            if (state.view === "todo" && task.completed && !state.completingIds.has(task.id)) return false;
+            if (state.view === "done" && (!task.completed || state.completingIds.has(task.id))) return false;
             if (state.levelFilter !== "all" && task.level !== state.levelFilter) return false;
+            if (state.search && !task.title.toLocaleLowerCase().includes(state.search)) return false;
             return true;
           })
           .sort((a, b) => (state.view === "done" ? compareDone(a, b) : compareTodo(a, b)));
@@ -1350,7 +1429,7 @@
         titleRow.append(mark, title);
 
         const meta = document.createElement("p");
-        [levelMeta[task.level].label, formatDateLabel(task.deadline), task.completedAt ? `Done ${formatDateLabel(task.completedAt.slice(0, 10))}` : ""]
+        [levelMeta[task.level].label, formatDateLabel(task.deadline), task.completedAt ? `Done ${formatDateLabel(localDate(new Date(task.completedAt)))}` : ""]
           .filter(Boolean)
           .forEach((item) => {
             const span = document.createElement("span");
@@ -1429,7 +1508,7 @@
       }
 
       function openPanel(taskId = null) {
-        if (taskId && state.completingIds.has(taskId)) return;
+        if (state.storageBlocked || (taskId && state.completingIds.has(taskId))) return;
         const task = taskId ? state.tasks.find((item) => item.id === taskId) : null;
         state.editingId = taskId;
         state.draft = task
@@ -1467,12 +1546,14 @@
 
       function saveTask(event) {
         event.preventDefault();
+        if (els.modal.hidden || state.storageBlocked) return;
         const title = els.titleInput.value.trim();
         if (!title) return;
         const deadline = draftToDeadline();
+        let tasks;
 
         if (state.editingId) {
-          state.tasks = state.tasks.map((task) =>
+          tasks = state.tasks.map((task) =>
             task.id === state.editingId
               ? {
                   ...task,
@@ -1483,42 +1564,34 @@
               : task,
           );
         } else {
-          state.tasks.push({
-            id: crypto.randomUUID(),
+          tasks = [...state.tasks, {
+            id: newTaskId(),
             title,
             level: state.draft.level,
             deadline,
             completed: false,
             createdAt: new Date().toISOString(),
             completedAt: null,
-          });
+          }];
         }
 
-        saveTasks();
+        if (!saveTasks(tasks)) return;
         closePanel();
         render();
       }
 
       function toggleTask(id) {
-        const task = state.tasks.find((item) => item.id === id);
-        if (!task || state.completingIds.has(id)) return;
-
-        if (task.completed) {
-          state.tasks = state.tasks.map((item) =>
-            item.id === id
-              ? {
-                  ...item,
-                  completed: false,
-                  completedAt: null,
-                }
-              : item,
-          );
-          saveTasks();
-          render();
-          return;
-        }
-
-        startCompletion(id);
+        const task = state.tasks.find(item => item.id === id);
+        if (!task || state.storageBlocked || state.completingIds.has(id)) return;
+        const tasks = state.tasks.map(item => item.id === id ? {
+          ...item, completed: !item.completed,
+          completedAt: item.completed ? null : new Date().toISOString(),
+        } : item);
+        // Persist the user's intent before starting cosmetic motion.
+        if (!saveTasks(tasks)) return;
+        rememberAction(task.completed ? "Restored" : "Completed", task);
+        if (task.completed) render();
+        else startCompletion(id);
       }
 
       function startCompletion(id) {
@@ -1532,12 +1605,13 @@
         state.completingIds.add(id);
         const card = document.querySelector(`[data-task-id="${CSS.escape(id)}"]`);
         if (card) {
+          card.style.maxHeight = `${card.getBoundingClientRect().height}px`;
           card.classList.add("complete");
           card.querySelector(".check").textContent = "✓";
           card.querySelectorAll("button").forEach((button) => {
             button.disabled = true;
           });
-          requestAnimationFrame(() => card.classList.add("completing"));
+          requestAnimationFrame(() => { card.style.maxHeight = "0px"; card.classList.add("completing"); });
         } else {
           render();
         }
@@ -1550,16 +1624,6 @@
         if (timer) window.clearTimeout(timer);
         state.completeTimers.delete(id);
         state.completingIds.delete(id);
-        state.tasks = state.tasks.map((task) =>
-          task.id === id
-            ? {
-                ...task,
-                completed: true,
-                completedAt: task.completedAt || new Date().toISOString(),
-              }
-            : task,
-        );
-        saveTasks();
         render();
       }
 
@@ -1567,8 +1631,9 @@
         if (state.completingIds.has(id)) return;
         const task = state.tasks.find((item) => item.id === id);
         if (!task || !confirm(`Delete "${task.title}"?`)) return;
-        state.tasks = state.tasks.filter((item) => item.id !== id);
-        saveTasks();
+        const index = state.tasks.indexOf(task);
+        if (!saveTasks(state.tasks.filter((item) => item.id !== id))) return;
+        rememberAction("Deleted", task, index);
         render();
       }
 
@@ -1643,6 +1708,33 @@
       });
 
       els.motionSwitch.addEventListener("click", () => setSetting("reduceMotion", !state.settings.reduceMotion));
+
+      document.querySelector("#searchInput").addEventListener("input", event => {
+        state.search = event.target.value.trim().toLocaleLowerCase();
+        document.querySelector("#clearSearch").hidden = !event.target.value;
+        render();
+      });
+      document.querySelector("#clearSearch").addEventListener("click", () => {
+        document.querySelector("#searchInput").value = "";
+        state.search = "";
+        document.querySelector("#clearSearch").hidden = true;
+        render();
+        document.querySelector("#searchInput").focus();
+      });
+      document.querySelector("#undoButton").addEventListener("click", undoLastAction);
+      document.querySelector("#dismissUndo").addEventListener("click", () => {
+        state.undoStack = [];
+        renderUndo();
+      });
+      let displayedDay = isoToday();
+      function refreshDay() {
+        if (displayedDay === isoToday()) return;
+        displayedDay = isoToday();
+        render();
+      }
+      window.setInterval(refreshDay, 30000);
+      window.addEventListener("focus", refreshDay);
+      document.addEventListener("visibilitychange", refreshDay);
 
       state.settings = loadSettings();
       applySettings();
